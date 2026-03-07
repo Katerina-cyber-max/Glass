@@ -1,0 +1,19 @@
+{
+  "name": "Glass Converter",
+  "short_name": "Glass",
+  "description": "Convert US units and prices. Finally, the world makes sense.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030309",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
