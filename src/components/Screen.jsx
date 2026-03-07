@@ -4,7 +4,7 @@ import { SYM, fmt, isPrice } from '../data'
 const ACCENT_FROM = { weight: 'aw', distance: 'ab', temp: 'at', pkg: 'at', pgal: 'at' }
 const ACCENT_TO   = { weight: 'ab', distance: 'ab', temp: 'at', pkg: 'ac', pgal: 'ac' }
 
-export default function Screen({ S, dispatch, td, result }) {
+export default function Screen({ S, dispatch, td, result, liveRates }) {
   const price = isPrice(S.tab)
   const fi = S.tab === 'temp' ? (S.tempDir === 'FtoC' ? 0 : 1) : S.fi
   const ti = S.tab === 'temp' ? (S.tempDir === 'FtoC' ? 0 : 1) : S.ti
@@ -160,6 +160,7 @@ export default function Screen({ S, dispatch, td, result }) {
             {S.rateStr || String(S.rate)}
           </button>
           <span>{S.toCur}</span>
+          {liveRates && <span className="live-badge">live</span>}
         </div>
       )}
 

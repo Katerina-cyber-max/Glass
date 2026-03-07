@@ -1,5 +1,6 @@
-import { useReducer } from 'react'
+import { useReducer, useEffect, useRef } from 'react'
 import { TABS, defaultRate, calcResult, fmt, isPrice } from './data'
+import useRates from './hooks/useRates'
 import Screen from './components/Screen'
 import NumpadSheet from './components/NumpadSheet'
 import PickerSheet from './components/PickerSheet'
@@ -21,10 +22,14 @@ const initialState = {
   tempDir: 'FtoC',
 }
 
+function fmtRate(r) {
+  return parseFloat(r.toFixed(4)).toString()
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case 'SWITCH_TAB':
-      return { ...state, tab: action.tab, str: '', fi: 0, ti: 0, numpad: false, picker: false, rateStr: String(state.rate) }
+      return { ...state, tab: action.tab, str: '', fi: 0, ti: 0, numpad: false, picker: false, rateStr: fmtRate(state.rate) }
 
     case 'OPEN_NUMPAD':
       if (state.picker) return state
@@ -66,12 +71,13 @@ function reducer(state, action) {
       return { ...state, ti: action.idx, picker: false }
 
     case 'PICK_CUR': {
+      // action.rate is injected by smartDispatch using live data
       if (state.pickerMode === 'cfrom') {
-        const rate = defaultRate(action.code, state.toCur)
-        return { ...state, fromCur: action.code, rate, rateStr: String(rate), picker: false }
+        const rate = action.rate ?? defaultRate(action.code, state.toCur)
+        return { ...state, fromCur: action.code, rate, rateStr: fmtRate(rate), picker: false }
       }
-      const rate = defaultRate(state.fromCur, action.code)
-      return { ...state, toCur: action.code, rate, rateStr: String(rate), picker: false }
+      const rate = action.rate ?? defaultRate(state.fromCur, action.code)
+      return { ...state, toCur: action.code, rate, rateStr: fmtRate(rate), picker: false }
     }
 
     case 'SWAP': {
@@ -89,11 +95,14 @@ function reducer(state, action) {
         ti: nti >= 0 ? nti : 0,
       }
       if (isPrice(state.tab) && state.fromCur !== state.toCur) {
-        const rate = defaultRate(state.toCur, state.fromCur)
-        return { ...next, fromCur: state.toCur, toCur: state.fromCur, rate, rateStr: String(rate) }
+        const rate = action.rate ?? defaultRate(state.toCur, state.fromCur)
+        return { ...next, fromCur: state.toCur, toCur: state.fromCur, rate, rateStr: fmtRate(rate) }
       }
       return next
     }
+
+    case 'SET_RATE':
+      return { ...state, rate: action.rate, rateStr: fmtRate(action.rate) }
 
     case 'SET_TEMP_DIR':
       return { ...state, tempDir: action.dir }
@@ -105,6 +114,42 @@ function reducer(state, action) {
 
 export default function App() {
   const [S, dispatch] = useReducer(reducer, initialState)
+  const { rates: liveRates, loading: ratesLoading } = useRates()
+  const liveRatesRef = useRef(null)
+
+  // Keep ref in sync for use in smartDispatch
+  useEffect(() => {
+    if (liveRates) liveRatesRef.current = liveRates
+  }, [liveRates])
+
+  // Update displayed rate when live data first arrives
+  useEffect(() => {
+    if (liveRates) {
+      dispatch({ type: 'SET_RATE', rate: computeRate(S.fromCur, S.toCur, liveRates) })
+    }
+  }, [liveRates]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function computeRate(from, to, rates) {
+    const lr = rates ?? liveRatesRef.current
+    if (!lr || from === to) return defaultRate(from, to)
+    const f = lr[from], t = lr[to]
+    if (!f || !t) return defaultRate(from, to)
+    return t / f
+  }
+
+  // Injects live rates into currency-related actions before dispatching
+  function smartDispatch(action) {
+    if (action.type === 'PICK_CUR') {
+      const newFrom = S.pickerMode === 'cfrom' ? action.code : S.fromCur
+      const newTo   = S.pickerMode !== 'cfrom' ? action.code : S.toCur
+      return dispatch({ ...action, rate: computeRate(newFrom, newTo) })
+    }
+    if (action.type === 'SWAP' && isPrice(S.tab)) {
+      return dispatch({ ...action, rate: computeRate(S.toCur, S.fromCur) })
+    }
+    dispatch(action)
+  }
+
   const td = TABS[S.tab]
   const result = calcResult(S)
   const dimmed = S.numpad || S.picker
@@ -115,12 +160,18 @@ export default function App() {
         <div className={`content-wrap${dimmed ? ' dimmed' : ''}`}>
           <div className="island" />
           <div className="content">
-            <Screen S={S} dispatch={dispatch} td={td} result={result} />
+            <Screen
+              S={S}
+              dispatch={smartDispatch}
+              td={td}
+              result={result}
+              liveRates={!ratesLoading && !!liveRates}
+            />
           </div>
         </div>
-        <TabBar S={S} dispatch={dispatch} />
-        <NumpadSheet S={S} dispatch={dispatch} td={td} />
-        <PickerSheet S={S} dispatch={dispatch} td={td} />
+        <TabBar S={S} dispatch={smartDispatch} />
+        <NumpadSheet S={S} dispatch={smartDispatch} td={td} />
+        <PickerSheet S={S} dispatch={smartDispatch} td={td} />
       </div>
     </div>
   )
