@@ -27,12 +27,11 @@ export default function useRates() {
   const [rates, setRates] = useState(() => readCache())
 
   useEffect(() => {
-    fetch('https://api.frankfurter.app/latest')
+    fetch('https://open.er-api.com/v6/latest/USD')
       .then(r => r.json())
       .then(({ rates }) => {
-        const data = { EUR: 1, ...rates }
-        writeCache(data)
-        setRates(data)
+        writeCache(rates)
+        setRates(rates)
       })
       .catch(() => {}) // молча оставляем кеш или null
   }, [])
