@@ -4,7 +4,7 @@ import { SYM, fmt, isPrice } from '../data'
 const ACCENT_FROM = { weight: 'aw', distance: 'ab', temp: 'at', pkg: 'at', pgal: 'at' }
 const ACCENT_TO   = { weight: 'ab', distance: 'ab', temp: 'at', pkg: 'ac', pgal: 'ac' }
 
-export default function Screen({ S, dispatch, td, result, liveRates }) {
+export default function Screen({ S, dispatch, td, result, hasRates }) {
   const price = isPrice(S.tab)
   const fi = S.tab === 'temp' ? (S.tempDir === 'FtoC' ? 0 : 1) : S.fi
   const ti = S.tab === 'temp' ? (S.tempDir === 'FtoC' ? 0 : 1) : S.ti
@@ -24,20 +24,24 @@ export default function Screen({ S, dispatch, td, result, liveRates }) {
     prevResult.current = result
   }, [result])
 
-  // Formula text
   function getFormula() {
     if (S.tab === 'temp') {
       return S.tempDir === 'FtoC' ? '°C = (°F − 32) × ⁵⁄₉' : '°F = °C × ⁹⁄₅ + 32'
     }
     const base = td.from[fi].cvt(1)
     let res = td.to[ti].cvt(base)
-    if (price && S.fromCur !== S.toCur) res *= S.rate
+    // Для ценовых вкладок с разными валютами показываем формулу только если курс есть
+    if (price && S.fromCur !== S.toCur) {
+      if (S.rate === null) return null
+      res *= S.rate
+    }
     const cs  = price ? (SYM[S.fromCur] || S.fromCur) : ''
     const ct2 = price ? (SYM[S.toCur]   || S.toCur)   : ''
     if (price) return `${cs}1/${fromUnit.id} × ${fmt(res)} = ${ct2}1/${toUnit.id}`
     return `1 ${fromUnit.id} = ${fmt(res)} ${toUnit.id}`
   }
 
+  const formula = getFormula()
   const showCursor = S.numpad && S.numpadTarget === 'main'
 
   return (
@@ -152,20 +156,23 @@ export default function Screen({ S, dispatch, td, result, liveRates }) {
         )}
       </div>
 
-      {/* Rate row */}
+      {/* Rate row — только когда разные валюты */}
       {showRate && (
         <div className="rate-row">
           <span>1 {S.fromCur} =</span>
-          <button className="rate-trigger" onClick={() => dispatch({ type: 'OPEN_NUMPAD', target: 'rate' })}>
-            {S.rateStr || String(S.rate)}
-          </button>
+          {S.rate !== null
+            ? <button className="rate-trigger" onClick={() => dispatch({ type: 'OPEN_NUMPAD', target: 'rate' })}>
+                {S.rateStr}
+              </button>
+            : <span className="rate-loading">…</span>
+          }
           <span>{S.toCur}</span>
-          {liveRates && <span className="live-badge">live</span>}
+          {hasRates && S.rate !== null && <span className="live-badge">live</span>}
         </div>
       )}
 
       {/* Formula */}
-      <div className="formula-row">{getFormula()}</div>
+      {formula && <div className="formula-row">{formula}</div>}
     </>
   )
 }

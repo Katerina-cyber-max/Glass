@@ -1,5 +1,5 @@
 import { useReducer, useEffect, useRef } from 'react'
-import { TABS, defaultRate, calcResult, fmt, isPrice } from './data'
+import { TABS, calcResult, fmt, isPrice } from './data'
 import useRates from './hooks/useRates'
 import Screen from './components/Screen'
 import NumpadSheet from './components/NumpadSheet'
@@ -13,23 +13,23 @@ const initialState = {
   ti: 0,
   numpad: false,
   numpadTarget: 'main',
-  rateStr: '0.92',
+  rateStr: '',
   picker: false,
   pickerMode: null,
   fromCur: 'USD',
   toCur: 'EUR',
-  rate: 0.92,
+  rate: null, // null = курсы ещё не загружены
   tempDir: 'FtoC',
 }
 
 function fmtRate(r) {
-  return parseFloat(r.toFixed(4)).toString()
+  return r !== null ? parseFloat(r.toFixed(4)).toString() : ''
 }
 
 function reducer(state, action) {
   switch (action.type) {
     case 'SWITCH_TAB':
-      return { ...state, tab: action.tab, str: '', fi: 0, ti: 0, numpad: false, picker: false, rateStr: fmtRate(state.rate) }
+      return { ...state, tab: action.tab, str: '', fi: 0, ti: 0, numpad: false, picker: false }
 
     case 'OPEN_NUMPAD':
       if (state.picker) return state
@@ -71,12 +71,9 @@ function reducer(state, action) {
       return { ...state, ti: action.idx, picker: false }
 
     case 'PICK_CUR': {
-      // action.rate is injected by smartDispatch using live data
-      if (state.pickerMode === 'cfrom') {
-        const rate = action.rate ?? defaultRate(action.code, state.toCur)
+      const rate = action.rate ?? null
+      if (state.pickerMode === 'cfrom')
         return { ...state, fromCur: action.code, rate, rateStr: fmtRate(rate), picker: false }
-      }
-      const rate = action.rate ?? defaultRate(state.fromCur, action.code)
       return { ...state, toCur: action.code, rate, rateStr: fmtRate(rate), picker: false }
     }
 
@@ -95,7 +92,7 @@ function reducer(state, action) {
         ti: nti >= 0 ? nti : 0,
       }
       if (isPrice(state.tab) && state.fromCur !== state.toCur) {
-        const rate = action.rate ?? defaultRate(state.toCur, state.fromCur)
+        const rate = action.rate ?? null
         return { ...next, fromCur: state.toCur, toCur: state.fromCur, rate, rateStr: fmtRate(rate) }
       }
       return next
@@ -114,15 +111,12 @@ function reducer(state, action) {
 
 export default function App() {
   const [S, dispatch] = useReducer(reducer, initialState)
-  const { rates: liveRates, loading: ratesLoading } = useRates()
-  const liveRatesRef = useRef(null)
+  const liveRates = useRates()
+  const liveRatesRef = useRef(liveRates)
 
-  // Keep ref in sync for use in smartDispatch
-  useEffect(() => {
-    if (liveRates) liveRatesRef.current = liveRates
-  }, [liveRates])
+  useEffect(() => { liveRatesRef.current = liveRates }, [liveRates])
 
-  // Update displayed rate when live data first arrives
+  // Обновляем курс когда данные появляются (из кеша или с API)
   useEffect(() => {
     if (liveRates) {
       dispatch({ type: 'SET_RATE', rate: computeRate(S.fromCur, S.toCur, liveRates) })
@@ -131,13 +125,12 @@ export default function App() {
 
   function computeRate(from, to, rates) {
     const lr = rates ?? liveRatesRef.current
-    if (!lr || from === to) return defaultRate(from, to)
+    if (!lr || from === to) return null
     const f = lr[from], t = lr[to]
-    if (!f || !t) return defaultRate(from, to)
+    if (!f || !t) return null
     return t / f
   }
 
-  // Injects live rates into currency-related actions before dispatching
   function smartDispatch(action) {
     if (action.type === 'PICK_CUR') {
       const newFrom = S.pickerMode === 'cfrom' ? action.code : S.fromCur
@@ -165,7 +158,7 @@ export default function App() {
               dispatch={smartDispatch}
               td={td}
               result={result}
-              liveRates={!ratesLoading && !!liveRates}
+              hasRates={!!liveRates}
             />
           </div>
         </div>

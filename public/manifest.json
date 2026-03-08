@@ -1,6 +1,6 @@
 {
-  "name": "Glass Converter",
-  "short_name": "Glass",
+  "name": "Gotcha",
+  "short_name": "Gotcha",
   "description": "Convert US units and prices. Finally, the world makes sense.",
   "start_url": "/",
   "scope": "/",

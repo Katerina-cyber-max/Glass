@@ -412,7 +412,18 @@ body {
   transition: opacity .15s;
 }
 
-.tab-icon  { font-size: 22px; line-height: 1; }
+.tab-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-icon svg {
+  width: 22px;
+  height: 22px;
+  color: rgba(255,255,255,.26);
+}
 
 .tab-label {
   font-size: 9px;
@@ -422,22 +433,16 @@ body {
   font-family: 'Manrope', sans-serif;
 }
 
-.tab-btn.act-w .tab-label,
-.tab-btn.act-b .tab-label,
-.tab-btn.act-t .tab-label { color: #FF3CB4; }
-.tab-btn.act-c .tab-label { color: #00DEB8; }
+.tab-btn.tab-active .tab-icon svg { color: #fff; }
+.tab-btn.tab-active .tab-label    { color: #fff; }
 
 .tab-dot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
+  background: #fff;
   margin-top: 2px;
 }
-
-.tab-btn.act-w .tab-dot,
-.tab-btn.act-b .tab-dot,
-.tab-btn.act-t .tab-dot { background: #FF3CB4; }
-.tab-btn.act-c .tab-dot { background: #00DEB8; }
 
 /* ── SHEETS ── */
 .sheet-overlay {
