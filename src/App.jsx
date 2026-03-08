@@ -17,7 +17,7 @@ const initialState = {
   picker: false,
   pickerMode: null,
   fromCur: 'USD',
-  toCur: 'EUR',
+  toCur: 'USD',
   rate: null, // null = курсы ещё не загружены
   tempDir: 'FtoC',
 }
