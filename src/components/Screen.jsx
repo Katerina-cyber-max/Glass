@@ -48,7 +48,7 @@ export default function Screen({ S, dispatch, td, result, hasRates }) {
     <>
       {/* Header */}
       <div className="hdr">
-        <div className="hdr-title">Gotcha</div>
+        <div className="hdr-title">Metrix</div>
         <div className="hdr-sub">Finally, the world makes sense.<br />Convert US units &amp; prices.</div>
       </div>
 

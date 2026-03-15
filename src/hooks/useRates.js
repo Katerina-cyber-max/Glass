@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const CACHE_KEY = 'gotcha_rates'
+const CACHE_KEY = 'metrix_rates'
 const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 часа
 
 function readCache() {
