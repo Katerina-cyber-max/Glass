@@ -48,6 +48,7 @@ export const TABS = {
       { id: 'mi', name: 'Miles',        cvt: n => n * 1609.344 },
       { id: 'ft', name: 'Feet',         cvt: n => n * 0.3048 },
       { id: 'yd', name: 'Yards',        cvt: n => n * 0.9144 },
+      { id: 'in', name: 'Inches',       cvt: n => n * 0.0254 },
     ],
     to: [
       { id: 'km', name: 'Kilometers',   cvt: n => n / 1000 },
