@@ -1,6 +1,6 @@
 {
-  "name": "Gotcha",
-  "short_name": "Gotcha",
+  "name": "Metrix",
+  "short_name": "Metrix",
   "description": "Convert US units and prices. Finally, the world makes sense.",
   "start_url": "/",
   "scope": "/",
